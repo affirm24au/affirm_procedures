@@ -1069,30 +1069,73 @@
         }
         // Copy logic only
         function ngCopy() {
-            const ad = document.getElementById('ng-ad').value;
-            const lptp = document.getElementById('ng-lptp').value;
-            const rfd = document.getElementById('ng-rfd').value;
-            const payment = document.getElementById('ng-payment').value;
-            const notes = document.getElementById('ng-notes').value;
-            let formatted = '';
-            formatted += `AD: ${ad || ''}\n`;
-            formatted += `LPTP: ${lptp || ''}\n`;
-            formatted += `RFD: ${rfd || ''}\n`;
-            formatted += `Payment Arrangements: ${payment || ''}\n`;
-            formatted += `Additional Notes: ${notes || ''}`;
-            navigator.clipboard.writeText(formatted.trim())
-                .then(() => {
-                    const btn = document.querySelector('.ng-copy-btn');
-                    const orig = btn.textContent;
-                    btn.textContent = 'Copied!';
-                    btn.style.background = '#28a745';
-                    setTimeout(()=>{
-                        btn.textContent = orig;
-                        btn.style.background = '#0074d9';
-                    }, 1500);
-                })
-                .catch(() => alert('Copy failed. Please try again.'));
+    // 1. Collect and format data
+    const ad = document.getElementById('ng-ad').value;
+    const lptp = document.getElementById('ng-lptp').value;
+    const rfd = document.getElementById('ng-rfd').value;
+    const payment = document.getElementById('ng-payment').value;
+    const notes = document.getElementById('ng-notes').value;
+
+    let formatted = '';
+    formatted += `AD: ${ad || ''}\n`;
+    formatted += `LPTP: ${lptp || ''}\n`;
+    formatted += `RFD: ${rfd || ''}\n`;
+    formatted += `Payment Arrangements: ${payment || ''}\n`;
+    formatted += `Additional Notes: ${notes || ''}`;
+    
+    const textToCopy = formatted.trim();
+
+    // 2. Define the visual feedback logic (UI updates)
+    const updateUI = () => {
+        const btn = document.querySelector('.ng-copy-btn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+            btn.textContent = orig;
+            btn.style.background = '#0074d9';
+        }, 1500);
+    };
+
+    // 3. The Copy Logic (The Fix)
+    if (navigator.clipboard && window.isSecureContext) {
+        // Try the modern API first
+        navigator.clipboard.writeText(textToCopy)
+            .then(updateUI)
+            .catch(() => fallbackCopy(textToCopy, updateUI));
+    } else {
+        // Use fallback immediately if API is unavailable
+        fallbackCopy(textToCopy, updateUI);
+    }
+}
+
+// Fallback method using a hidden textarea (Best for Google Sites)
+function fallbackCopy(text, callback) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Ensure the textarea is not visible but part of the DOM
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            callback();
+        } else {
+            alert('Unable to copy');
         }
+    } catch (err) {
+        alert('Copy failed. Please try manually.');
+    }
+
+    document.body.removeChild(textArea);
+}
 
         // Clear form logic
         function ngClear() {
